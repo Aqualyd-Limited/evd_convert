@@ -3,11 +3,19 @@ name = "evd-convert"
 description = "Add your description here"
 readme = "README.md"
 authors = [
-    { name = "Gavin Macaulay", email = "gavin@aqualyd.nz" }
+    { name = "Gavin Macaulay"},
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "xmltodict>=1.0.4",
+]
 dynamic = ['version']
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.2",
+    "zensical>=0.0.59",
+]
 
 [project.scripts]
 evdconvert = "evd_convert.main:main"
@@ -35,6 +43,10 @@ extend-exclude = ["src/otherCode", "src/echosms/viewer", "*.ipynb"]
 preview = true
 
 [tool.ruff.lint]
+ignore = [
+    "missing-todo-author",
+    "missing-todo-link",
+]
 extend-select = [
     "B006",     # do not use mutable structures for argument defaults
     "F",        # Pyflakes rules
@@ -49,15 +61,9 @@ extend-select = [
     "RET",      # Good return practices
     "SIM",      # Common simplification rules
     "TID",      # Some good import practices
-    "TC",       # Enforce importing certain types in a TYPE_CHECKING block
+    # "TC",       # Enforce importing certain types in a TYPE_CHECKING block
     "PTH",      # Use pathlib instead of os.path
     "TD",       # Be diligent with TODO comments
     "NPY",      # Some numpy-specific things
     "FURB",     # Suggest more idiomatic Python patterns
-]
-
-[dependency-groups]
-dev = [
-    "pre-commit>=4.6.2",
-    "zensical>=0.0.59",
 ]

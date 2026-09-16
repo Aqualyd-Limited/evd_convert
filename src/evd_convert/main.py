@@ -15,10 +15,7 @@ def main():
         ))
     args = parser.parse_args()
 
-    if args.output:
-        o = Path(args.output)
-    else:
-        o = args.output
+    o = Path(args.output) if args.output else args.output
 
     c = to_raw()
 
