@@ -1,7 +1,7 @@
 import re
 import string
 import time
-from pathlib import Path
+from pathlib import Path  # ruff: ignore[typing-only-standard-library-import]
 
 import xmltodict
 
@@ -72,7 +72,9 @@ class to_raw:
                             # and any binary data
                             binary_end = element.rfind(binary_end_tag)
                             binary_data = element[binary_start:binary_end]
-                            print(f'{binary_tag.decode("ansi")} element has {len(binary_data)} bytes of binary data')
+                            print(
+                                f'{binary_tag.decode("ansi")} element has {len(binary_data)}'
+                                ' bytes of binary data')
                             # TODO: convert into numbers as per the metadata in packet_info
 
                     print()

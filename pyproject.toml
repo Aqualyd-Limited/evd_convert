@@ -1,69 +1,69 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = [ "hatch-vcs", "hatchling" ]
+
 [project]
 name = "evd-convert"
 description = "Add your description here"
 readme = "README.md"
 authors = [
-    { name = "Gavin Macaulay"},
+  { name = "Gavin Macaulay" },
 ]
 requires-python = ">=3.14"
-dependencies = [
-    "xmltodict>=1.0.4",
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Oceanography",
+  "Topic :: Scientific/Engineering :: Physics",
 ]
-dynamic = ['version']
+dynamic = [ "version" ]
+dependencies = [
+  "xmltodict>=1.0.4",
+]
+scripts.evdconvert = "evd_convert.main:main"
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.6.2",
-    "zensical>=0.0.59",
+  "prek>=0.5.3",
+  "zensical>=0.0.59",
 ]
 
-[project.scripts]
-evdconvert = "evd_convert.main:main"
-
-[build-system]
-requires = ["hatchling", "hatch-vcs"]
-build-backend = "hatchling.build"
-
-[tool.hatch.version]
-source = 'vcs'
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/evd_convert"]
-
-[tool.hatch.version.raw-options]
-local_scheme = "no-local-version"  # otherwise the non-tagged version is not accepted by testpypi
+[tool.hatch]
+version.source = "vcs"
+version.raw-options.local_scheme = "no-local-version"  # otherwise the non-tagged version is not accepted by testpypi
+build.targets.wheel.packages = [ "src/evd_convert" ]
 
 [tool.uv]
 exclude-newer = "7 days"
 
 [tool.ruff]
 line-length = 100
-# exclude the viewer and ipynb notebooks temporarily
-extend-exclude = ["src/otherCode", "src/echosms/viewer", "*.ipynb"]
 preview = true
-
-[tool.ruff.lint]
-ignore = [
-    "missing-todo-author",
-    "missing-todo-link",
+lint.extend-select = [
+  "B006", # do not use mutable structures for argument defaults
+  "C4",   # Catch incorrect use of comprehensions, dict, list, etc
+  "FA",   # Enforce from __future__ import annotations
+  "FURB", # Suggest more idiomatic Python patterns
+  "I",    # Sort imports properly
+  "ICN",  # Use common import conventions
+  "ISC",  # Good use of string concatenation
+  "NPY",  # Some numpy-specific things
+  "PTH",  # Use pathlib instead of os.path
+  "RET",  # Good return practices
+  "SIM",  # Common simplification rules
+  "TC",   # Enforce importing certain types in a TYPE_CHECKING block
+  "TD",   # Be diligent with TODO comments
+  "TID",  # Some good import practices
+  "UP",   # Warn if certain things can changed due to newer Python versions
+  "W",    # PyCodeStyle warnings
 ]
-extend-select = [
-    "B006",     # do not use mutable structures for argument defaults
-    "F",        # Pyflakes rules
-    "W",        # PyCodeStyle warnings
-    "E",        # PyCodeStyle errors
-    "I",        # Sort imports properly
-    "UP",       # Warn if certain things can changed due to newer Python versions
-    "C4",       # Catch incorrect use of comprehensions, dict, list, etc
-    "FA",       # Enforce from __future__ import annotations
-    "ISC",      # Good use of string concatenation
-    "ICN",      # Use common import conventions
-    "RET",      # Good return practices
-    "SIM",      # Common simplification rules
-    "TID",      # Some good import practices
-    # "TC",       # Enforce importing certain types in a TYPE_CHECKING block
-    "PTH",      # Use pathlib instead of os.path
-    "TD",       # Be diligent with TODO comments
-    "NPY",      # Some numpy-specific things
-    "FURB",     # Suggest more idiomatic Python patterns
+lint.ignore = [
+  "missing-todo-author",
+  "missing-todo-link",
 ]
