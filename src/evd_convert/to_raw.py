@@ -34,6 +34,8 @@ class to_raw:
 
         start_t = time.perf_counter()
 
+        ptypes = []
+
         with evd_file.open(mode='rb') as f:
             while True:
                 chunk = f.read(chunk_size)
@@ -66,18 +68,22 @@ class to_raw:
                             header = element[:binary_start] + binary_end_tag + b'</Packet>'
                             # and parse into a dict
                             packet_info = xmltodict.parse(header.decode('ansi'))
-                            print(packet_info)
+                            ptypes.append(packet_info['Packet']['@Type'])
 
                             # The end of the element always has the closing XML tags, so find those
                             # and any binary data
                             binary_end = element.rfind(binary_end_tag)
                             binary_data = element[binary_start:binary_end]
-                            print(
-                                f'{binary_tag.decode("ansi")} element has {len(binary_data)}'
-                                ' bytes of binary data')
+                            # print(
+                            #     f'{binary_tag.decode("ansi")} element has {len(binary_data)}'
+                            #     ' bytes of binary data')
                             # TODO: convert into numbers as per the metadata in packet_info
+                        else: # a purely text packet?
+                            packet_info = xmltodict.parse(element.decode('ansi'))
+                            ptypes.append(packet_info['Packet']['@Type'])
 
-                    print()
+
+                    # print()
 
                     num_packets += 1
 
@@ -88,3 +94,5 @@ class to_raw:
         print(f'Run time {run_time:.2f} s')
 
         print(f'Read {num_packets} packets')
+
+        print(set(ptypes))
