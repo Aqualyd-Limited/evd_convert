@@ -38,7 +38,7 @@ class to_raw:
     def __init__(self):
         pass
 
-    def convert(self, evd_file: Path, out_file: Path | None):
+    def convert(self, evd_file: Path, out_file: Path | None = None):
 
         if not out_file:
             out_file = evd_file.with_suffix('.raw')
@@ -56,8 +56,46 @@ class to_raw:
 
         ptypes = []
         first_ping = True
-        file_info = None
+        # file_info = None
+        datagram_count = 0
 
+        # 'beam_index' is an index into the sample data in the EVD file
+        # 'channel_num' is the number to use in the raw file for this channel of data. These
+        # are populated automatically (they need to start at 1 and increase monotonically)
+        channels_to_accept = {
+            'Sv pings STT': [
+                {'beam_index': 5, 'channel_num': None},
+                {'beam_index': 128, 'channel_num': None},
+            ],
+            'Sv pings SAT': [
+                {'beam_index': 5, 'channel_num': None},
+            ],
+            # 'Sv pings Double RX STV',
+            # 'Sv pings Double RX SAV',
+        }
+
+        channels_to_accept = {
+            'Sv pings STV': [
+                {'beam_index': 64, 'channel_num': None},
+                {'beam_index': 128, 'channel_num': None},
+                {'beam_index': 192, 'channel_num': None},
+            ],
+            'Sv pings Double RX STV': [
+                {'beam_index': 64, 'channel_num': None},
+                {'beam_index': 128, 'channel_num': None},
+                {'beam_index': 192, 'channel_num': None},
+            ],
+        }
+
+
+        # populate the channel_num value in the channels_to_accept dict
+        i = 1
+        for config in channels_to_accept.values():
+            for c in config:
+                c['channel_num'] = i
+                i += 1
+
+        # Now read in the EVD file and progressively write out the raw file.
         with evd_file.open(mode='rb') as f, out_file.open(mode='wb') as raw_fid:
             while True:
                 chunk = f.read(chunk_size)
@@ -72,10 +110,8 @@ class to_raw:
                     element = match.group(0)
 
                     if element.startswith(b'<FileInfo'):
-                        file_info = xmltodict.parse(element.decode('ansi'))
-                        print('Element with tag Fileinfo found')
-                        print(file_info)
-
+                        # file_info = xmltodict.parse(element.decode('ansi'))
+                        pass
                     elif element.startswith(b'<Packet'):
                         i = first_non_printable(element)
                         if i is not None:
@@ -105,20 +141,38 @@ class to_raw:
 
                         match packet_info['Packet']['@Type']:
                             case 'MultibeamPing':
-                                d = parse_multibeamping(packet_info, binary_data)
-                                print(d)
-                                if first_ping:
-                                    first_ping = False
-                                    write_con_datagram(raw_fid, d['timestamp'])
-                                write_raw_datagram(raw_fid, d)
+                                dgs = parse_multibeamping(
+                                    packet_info,
+                                    binary_data,
+                                    channels_to_accept
+                                )
+
+                                for dg in dgs:
+                                    if first_ping:
+                                        first_ping = False
+                                        datagram_count += 1
+                                        write_con_datagram(raw_fid, dg['timestamp'], channels_to_accept)
+
+                                    datagram_count += 1
+                                    write_raw_datagram(raw_fid, dg)
                             case 'Position':
                                 t, lat, lon = parse_position(packet_info)
+                                datagram_count += 1
                                 write_nmea_gps_datagram(raw_fid, t, lat, lon)
                             case 'Heading':
                                 t, heading = parse_heading(packet_info)
+                                datagram_count += 1
                                 write_nmea_heading_datagram(raw_fid, t, heading)
+                            case 'Roll':
+                                t, heading = parse_roll(packet_info)
+                                datagram_count += 1
+                            case 'Pitch':
+                                t, heading = parse_pitch(packet_info)
+                                datagram_count += 1
+
                             case 'TransducerList':
-                                parse_transducerlist(packet_info)
+                                # tx = parse_transducerlist(packet_info)
+                                pass
                             case _ as unsupported:
                                 print(f'Unsupported tag of {unsupported}')
 
@@ -130,18 +184,19 @@ class to_raw:
                     # remove the used bytes from the buffer
                     buffer = buffer[len(match.group(0)):]
 
-        run_time = time.perf_counter() - start_t
-        print(f'Run time {run_time:.2f} s')
+        # run_time = time.perf_counter() - start_t
+        print(f'Wrote {datagram_count} datagrams')
+        # print(f'Run time {run_time:.2f} s')
 
 
-def parse_multibeamping(packet, data):
+def parse_multibeamping(packet: dict, data, channel_config: dict):
     timestamp = _parse_time(packet)
 
     alpha = float(packet['Packet']['Calibration']['@AbsorptionCoefficient'])
     c = float(packet['Packet']['Calibration']['@SoundSpeed'])
 
     num_beams = int(packet['Packet']['BeamAngles']['@BeamCount'])
-    # beam_spread = float(packet['Packet']['BeamAngles']['@BeamSpread'])
+    beam_spread = float(packet['Packet']['BeamAngles']['@BeamSpread'])
     beam_angle_mode = packet['Packet']['BeamAngles']['@BeamAngleMode']
 
     start_range = float(packet['Packet']['PingData']['@StartRange'])
@@ -149,9 +204,22 @@ def parse_multibeamping(packet, data):
     sample_count = int(packet['Packet']['PingData']['@SampleCount'])
 
     sample_type = packet['Packet']['PingData']['@SamplePrecision']
+    data_type = packet['Packet']['PingData']['@StorageDataType']
+
+    # transducer = packet['Packet']['Parameters']['@Transducer']
+    # channel = packet['Packet']['Parameters']['@Channel']
+    source = packet['Packet']['Parameters']['@Source']
+
+    if data_type != 'Sv':
+        return []
+
+    if source not in channel_config:
+        return []
 
     if beam_angle_mode != 'Constant':
         raise ValueError('Non constant beams are currently unsupported')
+
+    beam_angles = np.linspace(-beam_spread/2, beam_spread/2, num=num_beams)
 
     if sample_type == 'Float':
         dt = np.single
@@ -162,59 +230,69 @@ def parse_multibeamping(packet, data):
 
     try:
         Sv = np.frombuffer(data, dtype=dt)
-        Sv = np.reshape(Sv, (num_beams, sample_count))
+        # Sv = np.reshape(Sv, (num_beams, sample_count))
+        Sv = np.reshape(Sv, (sample_count, num_beams)).T
     except ValueError:
         # happens if not the right amount of binary data
         print(f'skipped ping at {timestamp}')
+        return []
 
-    beam_to_use = 5
     sample_interval = 2 * (stop_range - start_range) / (sample_count * c)  # [s]
-    gain = 26.5  # [dB]
+    gain = 10**(26.5/10)  # [dB]
     transmit_power = 1000  # [W]
-    pulse_length = 0.001  # [s]
-    psi = 0.086  # [sr]
+    pulse_length = 0.001024  # [s]
+    psi = 0.0087  # [sr]
     sa_correction = 0.0  # [dB]
-    freq = 120000  # [Hz]
+    freq = 150000  # [Hz]
     wavelength = c / freq  # [m]
 
     r = np.linspace(start_range, stop_range, num=sample_count)  # [m]
 
     # convert seapix Sv values into power [dB] using EK60 equation and then into
     # the 16 bit ints that the raw format uses
-    # print(Sv.shape)
-    # print(r.shape)
     power = Sv - (
         + 20*np.log10(r)
         + 2*alpha*r
-        - 10*np.log(transmit_power * wavelength**2 / (16*np.pi**2))
-        - 2*gain
+        - 10*np.log(transmit_power * gain**2 * wavelength**2 / (16*np.pi**2))
         - 10*np.log10(c*pulse_length*psi/2)
         - 2*sa_correction
     )
-    # print(power)
-    power = np.rint(power * 256.0 / np.log10(2.0)).astype(int)
+    power = np.rint(power * 256.0 / (10 * np.log10(2.0))).astype(int)
 
-    # print(power)
+    raw_datagrams = []
+    for beam in channel_config[source]:
+        raw_datagrams.append({
+            'timestamp': timestamp,
+            'channel': beam['channel_num'],
+            'beam_angles': beam_angles,
+            'mode': 1,
+            'frequency': freq,
+            'transmit_power': transmit_power,
+            'pulse_length': pulse_length,
+            'bandwidth': 2000,
+            'sample_interval': sample_interval,  # [s]
+            'sound_velocity': c,
+            'absorption': alpha,
+            'count': sample_count,
+            'power': power[beam['beam_index'], :],
+            'angle': []
+        })
 
-    return {
-        'timestamp': timestamp,
-        'channel': 1,
-        'mode': 1,
-        'frequency': freq,
-        'transmit_power': transmit_power,
-        'pulse_length': pulse_length,
-        'bandwidth': 2000,
-        'sample_interval': sample_interval,  # [s]
-        'sound_velocity': c,
-        'absorption': alpha,
-        'count': sample_count,
-        'power': power[beam_to_use, :]
-    }
-
+    return raw_datagrams
 
 def parse_heading(packet):
     timestamp = _parse_time(packet)
     return timestamp, float(packet['Packet']['Parameters']['@Heading'])
+
+
+def parse_roll(packet):
+    timestamp = _parse_time(packet)
+    return timestamp, float(packet['Packet']['Parameters']['@Roll'])
+
+
+def parse_pitch(packet):
+    timestamp = _parse_time(packet)
+    return timestamp, float(packet['Packet']['Parameters']['@Pitch'])
 
 
 def parse_position(packet):
@@ -225,7 +303,7 @@ def parse_position(packet):
 
 
 def parse_transducerlist(packet):
-    return []
+    return {t['@ID']: t['@Sounder'] for t in packet['Packet']['Transducer']}
 
 
 def _parse_time(packet: str) -> str:
@@ -277,7 +355,7 @@ def write_nmea_heading_datagram(fid, timestamp, heading):
     __write_datagram(fid, nme_dg.build({'timestamp': timestamp, 'msg': msg.serialize()}))
 
 
-def write_con_datagram(fid, timestamp):
+def write_con_datagram(fid, timestamp, channel_config):
     """Write a EK80 CON0 datagram."""
     con_dg = Struct(
         "dg_type" / Const(b"CON0"),
@@ -291,7 +369,7 @@ def write_con_datagram(fid, timestamp):
         "config_transducer" / Array(
             this.transducer_count,
             Struct(
-                "channel_id" / PaddedString(128, 'ascii'),
+                "channel_name" / PaddedString(128, 'ascii'),
                 "beam_type" / Int32sl,  # 0 = single, 1 = split
                 "frequency" / Float32l,
                 "gain" / Float32l,
@@ -329,25 +407,32 @@ def write_con_datagram(fid, timestamp):
         'version': '2.0'
         })
 
-    con_data.update({
-        'transducer_count': 1,
-        'config_transducer': [{
-            'channel_id': 'ABC',
-            'beam_type': 0,
-            'frequency': 120000,
-            'gain': 26.5,
-            'EBA': -20.6,
-            'bw_alongship': 5.0,
-            'bw_athwartship': 5.0,
-            'pulselength_table': [1.0, 1.0, 1.0, 1.0, 1.0],
-            'gain_table': [26.5, 26.5, 26.5, 26.5, 26.5],
-            'sa_correction_table': [0.0, 0.0, 0.0, 0.0, 0.0],
-            'gpt_software_version': '1.0'
-        }]
-    })
+    num_channels = 0
+    for config in channel_config.values():
+        num_channels += len(config)
+
+    con_data['transducer_count'] = num_channels
+
+    configs = []
+    for name, config in channel_config.items():
+        for beam in config:
+            configs.append({
+                'channel_name': f'{name} (beam {beam["beam_index"]})',
+                'beam_type': 0,
+                'frequency':150000,
+                'gain': 26.5,
+                'EBA': -20.6,
+                'bw_alongship': 5.0,
+                'bw_athwartship': 5.0,
+                'pulselength_table': [0.256, 0.512, 0.1024, 0.2048, 0.4096],
+                'gain_table': [26.5, 26.5, 26.5, 26.5, 26.5],
+                'sa_correction_table': [0.0, 0.0, 0.0, 0.0, 0.0],
+                'gpt_software_version': '1.0'
+            })
+
+    con_data['config_transducer'] = configs
 
     __write_datagram(fid, con_dg.build(con_data))
-    print('Wrote CON0 datagram')
 
 
 def write_raw_datagram(fid, data):
@@ -359,6 +444,7 @@ def write_raw_datagram(fid, data):
         "channel" / Int16sl,
         "mode" / Int16sl,  # 1 for power only, 2 for angles only, 3 for both
         "transducer_depth" / Default(Float32l, 0.0),
+        "frequency" / Float32l,
         "transmit_power" / Float32l,
         "pulse_length" / Float32l,
         "bandwidth" / Float32l,
@@ -379,5 +465,4 @@ def write_raw_datagram(fid, data):
         "angle" / If(this.mode > 1, Array(this.count, Int16sl))
     )
 
-    __write_datagram(raw_dg.build(data))
-    print('rote RAW0 datagram')
+    __write_datagram(fid, raw_dg.build(data))

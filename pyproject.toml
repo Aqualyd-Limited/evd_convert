@@ -28,6 +28,7 @@ dependencies = [
   "construct>=2.10.70",
   "numpy>=2.5.3",
   "pynmeagps>=1.1.7",
+  "rich>=15.0.0",
   "xmltodict>=1.0.4",
 ]
 scripts.evdconvert = "evd_convert.main:main"

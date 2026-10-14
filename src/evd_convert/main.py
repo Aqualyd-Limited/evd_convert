@@ -1,6 +1,8 @@
 import argparse
 from pathlib import Path
 
+from rich import print
+
 from .to_raw import to_raw
 
 
@@ -8,8 +10,9 @@ def main():
     parser = argparse.ArgumentParser(prog='evd_converter',
                 description='Convert Echoview EVD files to other formats')
 
-    parser.add_argument('-i', '--input', required=True, help='The EVD file to convert')
-    parser.add_argument('-o', '--output', help='The file to produce')
+    parser.add_argument('-i', '--input', help='The EVD file to convert')
+    # parser.add_argument('-o', '--output', help='The file to produce')
+    parser.add_argument('-d', '--directory', help='A directory of EVD files to convert')
     parser.add_argument(
         '-f',
         '--format',
@@ -18,8 +21,16 @@ def main():
         )
     args = parser.parse_args()
 
-    o = Path(args.output) if args.output else args.output
-
     c = to_raw()
 
-    c.convert(Path(args.input), o)
+    if args.directory:
+        files = list(Path(args.directory).glob('*.evd'))
+        for i, f in enumerate(files):
+            print(
+                f'Converting [green]{f.name}[/green] [blue]({i+1} of {len(files)})',
+                highlight=False
+            )
+            c.convert(f)
+
+    else:
+        c.convert(Path(args.input))
