@@ -24,6 +24,9 @@ classifiers = [
 ]
 dynamic = [ "version" ]
 dependencies = [
+  "arrow>=1.4.0",
+  "construct>=2.10.70",
+  "numpy>=2.5.3",
   "xmltodict>=1.0.4",
 ]
 scripts.evdconvert = "evd_convert.main:main"
