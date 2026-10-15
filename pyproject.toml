@@ -4,7 +4,7 @@ requires = [ "hatch-vcs", "hatchling" ]
 
 [project]
 name = "evd-convert"
-description = "Add your description here"
+description = "Converts Echoview EVD-formatted files into other formats"
 readme = "README.md"
 authors = [
   { name = "Gavin Macaulay" },
