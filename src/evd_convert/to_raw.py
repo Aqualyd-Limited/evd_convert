@@ -2,8 +2,9 @@ import re
 import string
 import struct
 import time
+import xml
 from datetime import datetime
-from pathlib import Path  # ruff: ignore[typing-only-standard-library-import]
+from typing import TYPE_CHECKING
 
 import arrow
 import numpy as np
@@ -25,6 +26,9 @@ from construct import (
 )
 from pynmeagps import GET, NMEAMessage
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 PRINTABLE = set(string.printable.encode('ascii'))
 
 
@@ -38,7 +42,11 @@ class to_raw:
     def __init__(self):
         pass
 
-    def convert(self, evd_file: Path, out_file: Path | None = None):
+    def convert(
+        self,
+        evd_file: Path,
+        out_file: Path | None = None,
+        last_ping_time: arrow.Arrow | None = None):
 
         if not out_file:
             out_file = evd_file.with_suffix('.raw')
@@ -50,14 +58,13 @@ class to_raw:
         chunk_size = 64 * 65536
         buffer = bytearray()
 
-        num_packets = 0
-
         start_t = time.perf_counter()
 
         ptypes = []
         first_ping = True
         # file_info = None
-        datagram_count = 0
+        raw_datagram_count = 0
+        latest_ping_time = arrow.Arrow(1970, 1, 1, 0, 0, 0)
 
         # 'beam_index' is an index into the sample data in the EVD file
         # 'channel_num' is the number to use in the raw file for this channel of data. These
@@ -127,7 +134,11 @@ class to_raw:
                             binary_end_tag = b'</' + binary_tag + b'>'
                             header = element[:binary_start] + binary_end_tag + b'</Packet>'
                             # and parse into a dict
-                            packet_info = xmltodict.parse(header.decode('ansi'))
+                            try:
+                                packet_info = xmltodict.parse(header.decode('ansi'))
+                            except xml.parsers.expat.ExpatError:
+                                print('Error parsing this XML:')
+                                print(header.decode('ansi'))
                             ptypes.append(packet_info['Packet']['@Type'])
 
                             # The end of the element always has the closing XML tags, so find those
@@ -148,27 +159,32 @@ class to_raw:
                                 )
 
                                 for dg in dgs:
+                                    # Sometimes the first ping in a file has the same timestamp
+                                    # as the last ping in the previous file and LSSS doesn't
+                                    # like that, so tweak timestamps if that occurs
+                                    if last_ping_time is not None and dg['timestamp'] <= last_ping_time:
+                                        print('Dropped ping data due to overlapping timestamps:')
+                                        print(f'  Current ping time is {dg["timestamp"]}')
+                                        print(f'  Last ping in previous file was {last_ping_time}')
+                                        continue
+
+                                    latest_ping_time = max(dg['timestamp'], latest_ping_time)
+
                                     if first_ping:
                                         first_ping = False
-                                        datagram_count += 1
                                         write_con_datagram(raw_fid, dg['timestamp'], channels_to_accept)
-
-                                    datagram_count += 1
+                                    raw_datagram_count += 1
                                     write_raw_datagram(raw_fid, dg)
                             case 'Position':
                                 t, lat, lon = parse_position(packet_info)
-                                datagram_count += 1
                                 write_nmea_gps_datagram(raw_fid, t, lat, lon)
                             case 'Heading':
                                 t, heading = parse_heading(packet_info)
-                                datagram_count += 1
                                 write_nmea_heading_datagram(raw_fid, t, heading)
                             case 'Roll':
                                 t, heading = parse_roll(packet_info)
-                                datagram_count += 1
                             case 'Pitch':
                                 t, heading = parse_pitch(packet_info)
-                                datagram_count += 1
 
                             case 'TransducerList':
                                 # tx = parse_transducerlist(packet_info)
@@ -179,14 +195,14 @@ class to_raw:
                     else:
                         print(f'Unknown element found: {element}')
 
-                    num_packets += 1
-
                     # remove the used bytes from the buffer
                     buffer = buffer[len(match.group(0)):]
 
         # run_time = time.perf_counter() - start_t
-        print(f'Wrote {datagram_count} datagrams')
+        print(f'Wrote {raw_datagram_count} raw datagrams')
         # print(f'Run time {run_time:.2f} s')
+
+        return latest_ping_time
 
 
 def parse_multibeamping(packet: dict, data, channel_config: dict):
@@ -217,7 +233,7 @@ def parse_multibeamping(packet: dict, data, channel_config: dict):
         return []
 
     if beam_angle_mode != 'Constant':
-        raise ValueError('Non constant beams are currently unsupported')
+        raise ValueError('Non constant beam angles are currently unsupported')
 
     beam_angles = np.linspace(-beam_spread/2, beam_spread/2, num=num_beams)
 
@@ -226,7 +242,7 @@ def parse_multibeamping(packet: dict, data, channel_config: dict):
     elif sample_type == 'Double':
         dt = np.double
     else:
-        print(f'Currently unsupported binary data type: {sample_type}')
+        print(f'Currently unsupported binary data type of {sample_type}')
 
     try:
         Sv = np.frombuffer(data, dtype=dt)
