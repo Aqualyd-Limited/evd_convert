@@ -11,7 +11,7 @@ def main():
     parser = argparse.ArgumentParser(prog='evd_converter',
                 description='Convert Echoview EVD files to other formats')
 
-    parser.add_argument('-i', '--input', help='The EVD file to convert')
+    parser.add_argument('-i', '--input', help='An EVD file to convert')
     # parser.add_argument('-o', '--output', help='The file to produce')
     parser.add_argument('-d', '--directory', help='A directory of EVD files to convert')
     parser.add_argument(
