@@ -8,39 +8,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # test:
-  #   permissions:
-  #     contents: read
+  test:
+    permissions:
+      contents: read
 
-  #   name: Run the pytest tests
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-latest, windows-latest, macos-latest]
-  #       python-version: ["3.12", "3.13", "3.14"]
+    name: Run the pytest tests
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.12", "3.13", "3.14"]
 
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout evd_convert
-  #       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-  #       with:
-  #         persist-credentials: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout evd_convert
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-  #     - name: Set up Python ${{ matrix.python-version }}
-  #       uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #     - name: Install uv
-  #       uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-  #       with:
-  #         enable-cache: auto
-  #         cache-suffix: ${{ matrix.python-version }}
-  #     - name: Run tests
-  #       run: uv run --locked pytest -v -s -m "not internet" -n auto
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: auto
+          cache-suffix: ${{ matrix.python-version }}
+      - name: Run tests
+        run: uv run --locked pytest -v -s -m "not internet" -n auto
 
   build:
     name: Build distribution
     runs-on: ubuntu-latest
-    # needs: test
+    needs: test
     permissions:
       contents: read
 

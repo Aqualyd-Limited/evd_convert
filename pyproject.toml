@@ -6,6 +6,9 @@ requires = [ "hatch-vcs", "hatchling" ]
 name = "evd-convert"
 description = "Converts Echoview EVD-formatted files into other formats"
 readme = "README.md"
+keywords = [ "acoustic", "echoview", "evd" ]
+license = "MIT"
+license-files = [ "LICENSE" ]
 authors = [
   { name = "Gavin Macaulay" },
 ]
@@ -31,11 +34,15 @@ dependencies = [
   "rich>=15.0.0",
   "xmltodict>=1.0.4",
 ]
+urls.Homepage = "https://github.com/Aqualyd-Limited/evd_convert"
+urls.Issues = "https://github.com/Aqualyd-Limited/evd_convert/issues"
+urls.Repository = "https://github.com/Aqualyd-Limited/evd_convert"
 scripts.evdconvert = "evd_convert.main:main"
 
 [dependency-groups]
 dev = [
   "prek>=0.5.3",
+  "pytest>=9.1.1",
   "zensical>=0.0.59",
 ]
 
