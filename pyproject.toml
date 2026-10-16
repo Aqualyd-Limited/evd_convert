@@ -12,7 +12,7 @@ license-files = [ "LICENSE" ]
 authors = [
   { name = "Gavin Macaulay" },
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
@@ -20,6 +20,7 @@ classifiers = [
   "Natural Language :: English",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering",
   "Topic :: Scientific/Engineering :: Oceanography",
