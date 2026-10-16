@@ -8,7 +8,6 @@
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Aqualyd-Limited/evd_convert/publish-to-pypi.yml)](https://github.com/Aqualyd-Limited/evd_convert/actions/workflows/publish-to-pypi.yml)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Aqualyd-Limited/evd_convert/docs.yml?label=docs)](https://github.com/Aqualyd-Limited/evd_convert/actions/workflows/docs.yml)
 
-
 This Python package converts Echoview .evd files into other formats.
 
 It is at an early stage and is not yet fully functional.

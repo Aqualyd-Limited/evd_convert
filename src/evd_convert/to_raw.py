@@ -3,7 +3,7 @@ import string
 import struct
 import xml
 from datetime import datetime
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import arrow
 import numpy as np
@@ -24,9 +24,6 @@ from construct import (
     this,
 )
 from pynmeagps import GET, NMEAMessage
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 PRINTABLE = set(string.printable.encode('ascii'))
 
