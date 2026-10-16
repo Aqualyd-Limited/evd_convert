@@ -1,7 +1,6 @@
 import re
 import string
 import struct
-import time
 import xml
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -57,8 +56,6 @@ class to_raw:
         # some testing indicates that this size gives a short overall run time
         chunk_size = 64 * 65536
         buffer = bytearray()
-
-        start_t = time.perf_counter()
 
         ptypes = []
         first_ping = True
@@ -198,9 +195,7 @@ class to_raw:
                     # remove the used bytes from the buffer
                     buffer = buffer[len(match.group(0)):]
 
-        # run_time = time.perf_counter() - start_t
         print(f'Wrote {raw_datagram_count} raw datagrams')
-        # print(f'Run time {run_time:.2f} s')
 
         return latest_ping_time
 
