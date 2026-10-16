@@ -241,7 +241,6 @@ def parse_multibeamping(packet: dict, data, channel_config: dict):
 
     try:
         Sv = np.frombuffer(data, dtype=dt)
-        # Sv = np.reshape(Sv, (num_beams, sample_count))
         Sv = np.reshape(Sv, (sample_count, num_beams)).T
     except ValueError:
         # happens if not the right amount of binary data
