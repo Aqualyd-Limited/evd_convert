@@ -118,7 +118,7 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
         GITHUB_REPO: ${{ github.repository }}
         GITHUB_REF_NAME: ${{ github.ref_name }}
-      run: gh release create '${GITHUB_REF_NAME}' --repo '${GITHUB_REPO}' --notes ""
+      run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPO" --notes ""
     - name: Upload artifact signatures to GitHub Release
       env:
         GITHUB_TOKEN: ${{ github.token }}
@@ -127,7 +127,7 @@ jobs:
       # Upload to GitHub Release using the `gh` CLI.
       # `dist/` contains the built packages, and the
       # sigstore-produced signatures and certificates.
-      run: gh release upload '${GITHUB_REF_NAME}' dist/** --repo '${GITHUB_REPO}'
+      run: gh release upload "$GITHUB_REF_NAME" dist/** --repo "$GITHUB_REPO"
 
   publish-to-testpypi:
     name: Publish to TestPyPI
