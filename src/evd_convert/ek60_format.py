@@ -1,3 +1,5 @@
+import struct
+
 from construct import (
     Array,
     Const,
@@ -13,6 +15,7 @@ from construct import (
     Timestamp,
     this,
 )
+from pynmeagps import GET, NMEAMessage
 
 con_dg = Struct(
     "dg_type" / Const(b"CON0"),
@@ -61,7 +64,6 @@ nme_dg = Struct(
     'msg' / GreedyBytes
 )
 
-
 raw_dg = Struct(
     "dg_type" / Const(b"RAW0"),
     "timestamp" / Timestamp(Int64ul, 1e-7, 1601),
@@ -88,3 +90,76 @@ raw_dg = Struct(
     "power" / Array(this.count, Int16sl),
     "angle" / If(this.mode > 1, Array(this.count, Int16sl))
 )
+
+def __write_datagram(fid, datagram):
+    """Write a EK60 datagram to file."""
+
+    length = struct.pack('<i', len(datagram))
+    fid.write(length)
+    fid.write(datagram)
+    fid.write(length)
+
+def write_nmea_gps_datagram(fid, timestamp, lat, lon):
+
+    msg = NMEAMessage(
+        'GP',
+        'GLL',
+        GET,
+        time=timestamp.time(),
+        lat=lat,
+        lon=lon,
+        status='A',
+        posMode='A'
+    )
+
+    __write_datagram(fid, nme_dg.build({'timestamp': timestamp, 'msg': msg.serialize()}))
+
+def write_nmea_heading_datagram(fid, timestamp, heading):
+
+    msg = NMEAMessage('GP', 'HDT', GET, headingT=heading, headingTu='T')
+
+    __write_datagram(fid, nme_dg.build({'timestamp': timestamp, 'msg': msg.serialize()}))
+
+def write_con_datagram(fid, timestamp, channel_config):
+    """Write a EK80 CON0 datagram."""
+
+    con_data = {}
+    con_data['timestamp'] = timestamp
+    con_data.update({
+        'survey_name': 'the survey',
+        'transect_name': 'the transect',
+        'sounder_name': 'EK60',
+        'version': '2.0'
+        })
+
+    num_channels = 0
+    for config in channel_config.values():
+        num_channels += len(config)
+
+    con_data['transducer_count'] = num_channels
+
+    configs = []
+    for name, config in channel_config.items():
+        for beam in config:
+            configs.append({
+                'channel_name': f'{name} (beam {beam["beam_index"]})',
+                'beam_type': 0,
+                'frequency':150000,
+                'gain': 26.5,
+                'EBA': -20.6,
+                'bw_alongship': 5.0,
+                'bw_athwartship': 5.0,
+                'pulselength_table': [0.256, 0.512, 0.1024, 0.2048, 0.4096],
+                'gain_table': [26.5, 26.5, 26.5, 26.5, 26.5],
+                'sa_correction_table': [0.0, 0.0, 0.0, 0.0, 0.0],
+                'gpt_software_version': '1.0'
+            })
+
+    con_data['config_transducer'] = configs
+
+    __write_datagram(fid, con_dg.build(con_data))
+
+def write_raw_datagram(fid, data):
+    """Write a EK60 ping datagram."""
+
+    __write_datagram(fid, raw_dg.build(data))
