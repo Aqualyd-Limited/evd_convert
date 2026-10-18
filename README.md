@@ -10,7 +10,5 @@
 
 This Python package converts Echoview .evd files into other formats.
 
-It is at an early stage and is not yet fully functional.
-
 The [documentation](https://aqualyd-limited.github.io/evd_convert)
 shows how to install and run the converter.
