@@ -39,7 +39,7 @@ dependencies = [
 urls.Homepage = "https://github.com/Aqualyd-Limited/evd_convert"
 urls.Issues = "https://github.com/Aqualyd-Limited/evd_convert/issues"
 urls.Repository = "https://github.com/Aqualyd-Limited/evd_convert"
-scripts.evdconvert = "evd_convert.main:main"
+scripts.evd-convert = "evd_convert.main:main"
 
 [dependency-groups]
 dev = [
