@@ -37,7 +37,7 @@ pip install evd-convert --upgrade
 
 EVD-convert is a command line program that extracts selected beams from Seapix 3D sonar
 data files in the Echoview EVD data file format and writes them into the
-Simrad EK60 raw file format. This faciliates the use of
+Simrad EK60 raw file format. This facilitates the use of
 Seapix data in conventional fisheries acoustic processing software.
 
 EVD-convert can convert individual files or a directory of files. In all cases, the
@@ -64,7 +64,7 @@ options:
 ```
 
 The ```-f/--format``` option is optional and defaults to 'raw'. The ```-i``` and ```-d```
-are mutually exclusive and if both are given the ```-d``` option takes precendence.
+are mutually exclusive and if both are given the ```-d``` option takes precedence.
 
 ## Selecting beam type and individual beams
 
@@ -79,4 +79,3 @@ vertically downwards, while beams 64 and 192 are the beams 30° to either the si
 If needed, the choice of beam type and beam number can be made part of the command line
 interface - create an issue on the evd-convert repository to request this and other
 suggestions/changes.
-
