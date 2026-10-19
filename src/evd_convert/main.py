@@ -8,7 +8,7 @@ from .to_raw import to_raw
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='evd_converter',
+    parser = argparse.ArgumentParser(prog='evd-convert',
                 description='Convert Echoview EVD files to other formats')
 
     parser.add_argument('-i', '--input', help='An EVD file to convert')
