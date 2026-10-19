@@ -21,10 +21,10 @@ and then run using
 evd-convert -h
 ```
 
-To upgrade to the latest version use:
+To upgrade to the latest version run evd-convert using:
 
 ```bash
-uv tool upgrade evd-convert
+uvx evd-convert@latest -h
 ```
 
 or with pip:
