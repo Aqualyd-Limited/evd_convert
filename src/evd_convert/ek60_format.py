@@ -149,7 +149,7 @@ def write_con_datagram(fid, timestamp, channel_config):
                 'EBA': -20.6,
                 'bw_alongship': 5.0,
                 'bw_athwartship': 5.0,
-                'pulselength_table': [0.256, 0.512, 0.1024, 0.2048, 0.4096],
+                'pulselength_table': [0.000256, 0.000512, 0.001024, 0.002048, 0.004096],
                 'gain_table': [26.5, 26.5, 26.5, 26.5, 26.5],
                 'sa_correction_table': [0.0, 0.0, 0.0, 0.0, 0.0],
                 'gpt_software_version': '1.0'

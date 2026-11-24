@@ -222,7 +222,7 @@ def parse_multibeamping(packet: dict, data, channel_config: dict):
         print(f'skipped ping at {timestamp}')
         return []
 
-    sample_interval = 2 * (stop_range - start_range) / (sample_count * c)  # [s]
+    sample_interval =  (stop_range - start_range) / (sample_count * c)  # [s]
     gain = 10**(26.5/10)  # [dB]
     transmit_power = 1000  # [W]
     pulse_length = 0.001024  # [s]
